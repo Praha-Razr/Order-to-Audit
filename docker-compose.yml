@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: order_to_audit_app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:////app/order_to_audit.db
+      - FACTORY_STATE=Tamil Nadu
+      - FACTORY_STATE_CODE=33
+      - FACTORY_GSTIN=33AAAAA0000A1Z5
+      - VARIANCE_TOLERANCE_PERCENT=3.0
+    restart: unless-stopped
