@@ -105,8 +105,9 @@ class ProductionService:
         )
 
         if not run_number:
+            now = utc_now()
             count = db.query(ProductionRun).count() + 1
-            run_number = f"PR-{datetime.utcnow().year}-{count:03d}"
+            run_number = f"PR-{now.year}-{count:03d}"
 
         total_material_cost = Decimal("0.00")
         run_items = []
