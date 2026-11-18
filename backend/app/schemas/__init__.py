@@ -77,6 +77,8 @@ class ProductionRunCreate(BaseModel):
     labour_cost: float = 0.0
     power_gas_cost: float = 0.0
     damaged_pouches_qty: float = 0.0
+    batch_number: Optional[str] = None
+    expiry_date: Optional[datetime] = None
     notes: Optional[str] = None
     user: str = "supervisor"
 

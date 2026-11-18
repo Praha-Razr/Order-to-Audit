@@ -60,6 +60,8 @@ def record_production_run(payload: ProductionRunCreate, db: Session = Depends(ge
             labour_cost=Decimal(str(payload.labour_cost)),
             power_gas_cost=Decimal(str(payload.power_gas_cost)),
             damaged_pouches_qty=Decimal(str(payload.damaged_pouches_qty)),
+            batch_number=payload.batch_number,
+            expiry_date=payload.expiry_date,
             notes=payload.notes,
             user=payload.user
         )

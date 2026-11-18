@@ -56,7 +56,10 @@ class SalesService:
                     f"Shortage of {shortage} {item.unit} for {item.name} (Available: {current_stock}, Requested: {qty})"
                 )
 
-            unit_price = Decimal(str(item_data.get("unit_price", item.selling_price or Decimal("0.00"))))
+            price_val = item_data.get("unit_price")
+            if price_val is None:
+                price_val = item.selling_price or Decimal("0.00")
+            unit_price = Decimal(str(price_val))
             taxable = (qty * unit_price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
             gst_rate = Decimal(str(item.gst_rate))
             gst_amount = (taxable * gst_rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
@@ -118,6 +121,69 @@ class SalesService:
             action="APPROVE",
             performed_by=user,
             details=f"Order {order.order_number} approved by {user}"
+        ))
+        db.commit()
+        db.refresh(order)
+        return order
+
+    @staticmethod
+    def reject_order(db: Session, order_id: int, reason: str = "Rejected by admin", user: str = "admin") -> SalesOrder:
+        order = db.query(SalesOrder).filter(SalesOrder.id == order_id).first()
+        if not order:
+            raise ValueError("Order not found")
+        order.status = OrderStatus.REJECTED
+        db.add(AuditLog(
+            entity_name="SALES_ORDER",
+            entity_id=str(order.id),
+            action="REJECT",
+            performed_by=user,
+            details=f"Order {order.order_number} rejected by {user}. Reason: {reason}"
+        ))
+        db.commit()
+        db.refresh(order)
+        return order
+
+    @staticmethod
+    def edit_order_item(
+        db: Session,
+        order_id: int,
+        item_id: int,
+        new_quantity: Decimal,
+        new_price: Optional[Decimal] = None,
+        user: str = "admin"
+    ) -> SalesOrder:
+        order = db.query(SalesOrder).filter(SalesOrder.id == order_id).first()
+        if not order:
+            raise ValueError("Order not found")
+        if order.status not in [OrderStatus.SUBMITTED, OrderStatus.APPROVED]:
+            raise ValueError("Cannot edit invoiced or dispatched order")
+
+        order_item = [i for i in order.items if i.item_id == item_id]
+        if not order_item:
+            raise ValueError("Item not found in order")
+        
+        target = order_item[0]
+        target.approved_qty = new_quantity
+        if new_price is not None:
+            target.unit_price = new_price
+
+        taxable = (target.approved_qty * target.unit_price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        gst_amt = (taxable * target.gst_rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        target.taxable_amount = taxable
+        target.gst_amount = gst_amt
+        target.total_amount = taxable + gst_amt
+
+        # Recalculate order totals
+        order.total_taxable_amount = sum([i.taxable_amount for i in order.items], Decimal("0.00"))
+        order.total_gst_amount = sum([i.gst_amount for i in order.items], Decimal("0.00"))
+        order.total_amount = order.total_taxable_amount + order.total_gst_amount
+
+        db.add(AuditLog(
+            entity_name="SALES_ORDER",
+            entity_id=str(order.id),
+            action="EDIT",
+            performed_by=user,
+            details=f"Order {order.order_number} updated: item {item_id} set to qty {new_quantity}"
         ))
         db.commit()
         db.refresh(order)

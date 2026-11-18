@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckCircle, Truck, DollarSign, PlusCircle, AlertCircle, Download, FileSpreadsheet, Ban } from 'lucide-react';
+import { FileText, CheckCircle, Truck, DollarSign, PlusCircle, AlertCircle, Download, FileSpreadsheet, Ban, Share2, Edit3 } from 'lucide-react';
 import { api } from '../api';
 import { SalesOrder, Invoice, Item, Customer } from '../types';
 
@@ -53,6 +53,38 @@ export const AdminView: React.FC = () => {
       setLoading(true);
       await api.approveOrder(orderId);
       setMsg(`Order approved successfully.`);
+      loadData();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReject = async (orderId: number) => {
+    const reason = prompt('Enter rejection reason:');
+    if (!reason) return;
+    try {
+      setLoading(true);
+      await api.rejectOrder(orderId, reason);
+      setMsg(`Order rejected.`);
+      loadData();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditOrder = async (orderId: number, itemId: number, currentQty: number) => {
+    const newQtyStr = prompt(`Enter new quantity for item (Current: ${currentQty}):`, currentQty.toString());
+    if (!newQtyStr) return;
+    const newQty = parseFloat(newQtyStr);
+    if (isNaN(newQty) || newQty <= 0) return;
+    try {
+      setLoading(true);
+      await api.editOrder(orderId, itemId, newQty);
+      setMsg(`Order updated to ${newQty} units.`);
       loadData();
     } catch (e: any) {
       alert(e.message);
@@ -322,12 +354,20 @@ export const AdminView: React.FC = () => {
                   </td>
                   <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
                     {o.status === 'SUBMITTED' && (
-                      <button
-                        onClick={() => handleApprove(o.id)}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg font-bold"
-                      >
-                        Approve
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleApprove(o.id)}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg font-bold"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleReject(o.id)}
+                          className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2 py-1.5 rounded-lg font-bold"
+                        >
+                          Reject
+                        </button>
+                      </>
                     )}
                     {o.status === 'APPROVED' && (
                       <button
@@ -408,6 +448,15 @@ export const AdminView: React.FC = () => {
                       className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-bold border border-slate-200"
                     >
                       <Download className="w-3.5 h-3.5" /> PDF
+                    </a>
+                    <a
+                      href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Dear Customer, your Tax Invoice ${inv.invoice_number} from South Indian Snacks Factory for ₹${inv.total_amount.toFixed(2)} has been generated.`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Share via WhatsApp"
+                      className="inline-flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1.5 rounded-lg font-bold border border-emerald-200"
+                    >
+                      <Share2 className="w-3.5 h-3.5" /> WhatsApp
                     </a>
                     {inv.status !== 'CANCELLED_VIA_CREDIT_NOTE' && (
                       <button

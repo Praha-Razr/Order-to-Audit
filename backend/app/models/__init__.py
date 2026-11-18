@@ -118,6 +118,8 @@ class ProductionRun(Base):
     __tablename__ = "production_runs"
     id = Column(Integer, primary_key=True, index=True)
     run_number = Column(String(50), unique=True, nullable=False, index=True)
+    batch_number = Column(String(50), nullable=True)
+    expiry_date = Column(DateTime, nullable=True)
     bom_id = Column(Integer, ForeignKey("boms.id"), nullable=False)
     product_id = Column(Integer, ForeignKey("items.id"), nullable=False)
     run_date = Column(DateTime, default=utc_now, nullable=False)

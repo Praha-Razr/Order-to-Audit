@@ -53,6 +53,14 @@ export const AuditorView: React.FC = () => {
         {/* Auditor Export Action Buttons */}
         <div className="flex items-center gap-2">
           <a
+            href={api.getTallyXmlUrl()}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition"
+          >
+            <Download className="w-4 h-4" /> Export Tally XML
+          </a>
+          <a
             href={api.getLedgerExcelUrl()}
             target="_blank"
             rel="noreferrer"

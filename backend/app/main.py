@@ -41,7 +41,15 @@ def startup_populate():
     finally:
         db.close()
 
-# Mount frontend production build if available
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
+
+@app.get("/api/health")
+def api_health():
+    return {"status": "healthy"}
+
+# Mount frontend production build as fallback for all UI routes
 frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
 if os.path.exists(frontend_dist):
     app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
@@ -60,7 +68,3 @@ else:
             },
             "status": "online"
         }
-
-@app.get("/health")
-def health():
-    return {"status": "healthy"}

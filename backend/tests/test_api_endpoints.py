@@ -62,3 +62,41 @@ def test_production_and_dashboard_api(db_session):
     dash = get_owner_dashboard(db=db_session)
     assert "stock_summary" in dash
     assert dash["latest_cost_per_packet"] > 0
+
+def test_order_rejection_edit_and_tally_xml(db_session):
+    from app.routers.sales import reject_order, edit_order
+    from app.routers.reports import export_tally_xml
+    from app.routers.items import reset_benchmark_data
+    from app.models import Item, Customer, User
+
+    flour = db_session.query(Item).filter(Item.code == "RM-FLOUR").first()
+    murukku = db_session.query(Item).filter(Item.code == "FG-MURUKKU-200").first()
+    cust = db_session.query(Customer).first()
+    salesman = db_session.query(User).filter(User.username == "salesman_a").first()
+
+    # Create order
+    ord_payload = OrderCreate(
+        salesman_id=salesman.id,
+        customer_id=cust.id,
+        items=[OrderItemInput(item_id=murukku.id, quantity=50.0)]
+    )
+    order_res = create_sales_order(payload=ord_payload, db=db_session)
+    order_id = order_res["order_id"]
+
+    # Test Edit Order Qty
+    edit_res = edit_order(order_id=order_id, item_id=murukku.id, quantity=30.0, db=db_session)
+    assert edit_res["total_amount"] == 30.0 * 50.0 * 1.05
+
+    # Test Reject Order
+    reject_res = reject_order(order_id=order_id, reason="Testing rejection flow", db=db_session)
+    assert "rejected" in reject_res["message"]
+
+    # Test Tally XML export
+    tally_res = export_tally_xml(db=db_session)
+    assert tally_res.status_code == 200
+    assert b"<ENVELOPE>" in tally_res.body
+    assert b"<TALLYREQUEST>Import Data</TALLYREQUEST>" in tally_res.body
+
+    # Test Reset Benchmark
+    reset_res = reset_benchmark_data(db=db_session)
+    assert "successfully" in reset_res["message"]

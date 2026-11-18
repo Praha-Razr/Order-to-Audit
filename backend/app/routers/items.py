@@ -104,3 +104,38 @@ def get_stock_ledger(item_id: int = None, db: Session = Depends(get_db)):
     Immutable audit ledger of every single movement.
     """
     return LedgerService.get_stock_ledger(db, item_id=item_id)
+
+@router.post("/reset-benchmark")
+def reset_benchmark_data(db: Session = Depends(get_db)):
+    """
+    Resets the database back to the exact initial Section 5 benchmark state:
+    Opening stock: flour 100 kg, oil 30 L, spice 5 kg, pouches 500, cartons 30, FG 50 pkts.
+    """
+    from app.models import (
+        AuditLog, CreditNote, Payment, InvoiceItem, Invoice,
+        SalesOrderItem, SalesOrder, ProductionRunItem, ProductionRun,
+        StockMovement, BOMItem, BOM, Item, Customer, User
+    )
+    from app.seed import seed_master_data
+
+    # Truncate/delete all tables in correct dependency order
+    db.query(AuditLog).delete()
+    db.query(CreditNote).delete()
+    db.query(Payment).delete()
+    db.query(InvoiceItem).delete()
+    db.query(Invoice).delete()
+    db.query(SalesOrderItem).delete()
+    db.query(SalesOrder).delete()
+    db.query(ProductionRunItem).delete()
+    db.query(ProductionRun).delete()
+    db.query(StockMovement).delete()
+    db.query(BOMItem).delete()
+    db.query(BOM).delete()
+    db.query(Item).delete()
+    db.query(Customer).delete()
+    db.query(User).delete()
+    db.commit()
+
+    # Re-seed
+    seed_master_data(db)
+    return {"message": "Database reset to Section 5 benchmark opening state successfully."}

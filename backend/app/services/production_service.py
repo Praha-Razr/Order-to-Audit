@@ -77,6 +77,8 @@ class ProductionService:
         labour_cost: Decimal = Decimal("0.00"),
         power_gas_cost: Decimal = Decimal("0.00"),
         damaged_pouches_qty: Decimal = Decimal("0.00"),
+        batch_number: Optional[str] = None,
+        expiry_date: Optional[datetime] = None,
         run_number: Optional[str] = None,
         notes: Optional[str] = None,
         user: str = "supervisor"
@@ -188,6 +190,8 @@ class ProductionService:
 
         production_run = ProductionRun(
             run_number=run_number,
+            batch_number=batch_number or f"BATCH-{utc_now().strftime('%Y%m%d')}-01",
+            expiry_date=expiry_date,
             bom_id=bom_id,
             product_id=finished_item.id,
             run_date=utc_now(),
@@ -254,6 +258,7 @@ class ProductionService:
             movement_type=MovementType.PRODUCTION_YIELD,
             reference_type="PRODUCTION_RUN",
             reference_id=str(production_run.run_number),
+            batch_number=production_run.batch_number,
             notes=f"Production yield from run {production_run.run_number}",
             user=user
         )

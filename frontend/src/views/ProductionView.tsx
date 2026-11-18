@@ -19,6 +19,12 @@ export const ProductionView: React.FC = () => {
   const [cartonQty, setCartonQty] = useState<number>(9);
   const [labourCost, setLabourCost] = useState<number>(1200);
   const [powerGasCost, setPowerGasCost] = useState<number>(600);
+  const [batchNumber, setBatchNumber] = useState<string>('BATCH-2026-M01');
+  const [expiryDate, setExpiryDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 90);
+    return d.toISOString().split('T')[0];
+  });
 
   const [loading, setLoading] = useState<boolean>(false);
   const [msg, setMsg] = useState<string>('');
@@ -98,6 +104,8 @@ export const ProductionView: React.FC = () => {
         labour_cost: labourCost,
         power_gas_cost: powerGasCost,
         damaged_pouches_qty: damagedPouches,
+        batch_number: batchNumber,
+        expiry_date: expiryDate ? new Date(expiryDate).toISOString() : undefined,
         notes: 'Batch 1 Murukku 200g production run',
         user: 'supervisor'
       });
@@ -268,6 +276,31 @@ export const ProductionView: React.FC = () => {
                     />
                     <span className="text-slate-500 font-medium">pcs</span>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Batch & Expiry Tracking (Food Safety Requirement) */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+              <label className="block font-bold text-slate-800">Batch & Expiry Tracking (Food Safety Compliance)</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <span className="text-[11px] text-slate-600 block mb-1">Batch Number</span>
+                  <input
+                    type="text"
+                    value={batchNumber}
+                    onChange={(e) => setBatchNumber(e.target.value)}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-1.5 font-bold"
+                  />
+                </div>
+                <div>
+                  <span className="text-[11px] text-slate-600 block mb-1">Best Before / Expiry Date</span>
+                  <input
+                    type="date"
+                    value={expiryDate}
+                    onChange={(e) => setExpiryDate(e.target.value)}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-1.5 font-bold"
+                  />
                 </div>
               </div>
             </div>

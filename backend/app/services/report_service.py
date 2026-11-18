@@ -429,3 +429,78 @@ class ReportService:
 
         doc.build(story)
         return buffer.getvalue()
+
+    @staticmethod
+    def export_tally_xml(db: Session) -> str:
+        """
+        Exports sales invoices as standard Tally-compatible XML (Tally XML format for voucher imports).
+        """
+        invoices = db.query(Invoice).filter(Invoice.status != InvoiceStatus.CANCELLED_VIA_CREDIT_NOTE).all()
+        xml_lines = [
+            '<?xml version="1.0" encoding="utf-8"?>',
+            '<ENVELOPE>',
+            '  <HEADER>',
+            '    <TALLYREQUEST>Import Data</TALLYREQUEST>',
+            '  </HEADER>',
+            '  <BODY>',
+            '    <IMPORTDATA>',
+            '      <REQUESTDESC>',
+            '        <REPORTNAME>Vouchers</REPORTNAME>',
+            '      </REQUESTDESC>',
+            '      <REQUESTDATA>'
+        ]
+
+        for inv in invoices:
+            dt = inv.invoice_date.strftime("%Y%m%d")
+            xml_lines.extend([
+                '        <TALLYMESSAGE xmlns:UDF="TallyUDF">',
+                f'          <VOUCHER VCHTYPE="Sales" ACTION="Create">',
+                f'            <DATE>{dt}</DATE>',
+                f'            <VOUCHERNUMBER>{inv.invoice_number}</VOUCHERNUMBER>',
+                f'            <PARTYLEDGERNAME>{inv.customer.name}</PARTYLEDGERNAME>',
+                f'            <STATENAME>{inv.place_of_supply}</STATENAME>',
+                f'            <AMOUNT>{float(inv.total_amount):.2f}</AMOUNT>',
+                '            <ALLLEDGERENTRIES.LIST>',
+                f'              <LEDGERNAME>{inv.customer.name}</LEDGERNAME>',
+                f'              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>',
+                f'              <AMOUNT>-{float(inv.total_amount):.2f}</AMOUNT>',
+                '            </ALLLEDGERENTRIES.LIST>',
+                '            <ALLLEDGERENTRIES.LIST>',
+                '              <LEDGERNAME>Sales Account</LEDGERNAME>',
+                '              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>',
+                f'              <AMOUNT>{float(inv.taxable_amount):.2f}</AMOUNT>',
+                '            </ALLLEDGERENTRIES.LIST>'
+            ])
+            if inv.cgst_amount > 0:
+                xml_lines.extend([
+                    '            <ALLLEDGERENTRIES.LIST>',
+                    '              <LEDGERNAME>CGST Output 2.5%</LEDGERNAME>',
+                    '              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>',
+                    f'              <AMOUNT>{float(inv.cgst_amount):.2f}</AMOUNT>',
+                    '            </ALLLEDGERENTRIES.LIST>',
+                    '            <ALLLEDGERENTRIES.LIST>',
+                    '              <LEDGERNAME>SGST Output 2.5%</LEDGERNAME>',
+                    '              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>',
+                    f'              <AMOUNT>{float(inv.sgst_amount):.2f}</AMOUNT>',
+                    '            </ALLLEDGERENTRIES.LIST>'
+                ])
+            if inv.igst_amount > 0:
+                xml_lines.extend([
+                    '            <ALLLEDGERENTRIES.LIST>',
+                    '              <LEDGERNAME>IGST Output 5.0%</LEDGERNAME>',
+                    '              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>',
+                    f'              <AMOUNT>{float(inv.igst_amount):.2f}</AMOUNT>',
+                    '            </ALLLEDGERENTRIES.LIST>'
+                ])
+            xml_lines.extend([
+                '          </VOUCHER>',
+                '        </TALLYMESSAGE>'
+            ])
+
+        xml_lines.extend([
+            '      </REQUESTDATA>',
+            '    </IMPORTDATA>',
+            '  </BODY>',
+            '</ENVELOPE>'
+        ])
+        return "\n".join(xml_lines)

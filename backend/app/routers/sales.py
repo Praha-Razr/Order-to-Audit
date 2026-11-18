@@ -89,6 +89,27 @@ def approve_order(order_id: int, user: str = "admin", db: Session = Depends(get_
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.post("/orders/{order_id}/reject")
+def reject_order(order_id: int, reason: str = "Admin rejected", user: str = "admin", db: Session = Depends(get_db)):
+    try:
+        order = SalesService.reject_order(db=db, order_id=order_id, reason=reason, user=user)
+        return {"message": f"Order {order.order_number} rejected"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.put("/orders/{order_id}/edit")
+def edit_order(order_id: int, item_id: int, quantity: float, price: float = None, user: str = "admin", db: Session = Depends(get_db)):
+    try:
+        order = SalesService.edit_order_item(
+            db=db, order_id=order_id, item_id=item_id,
+            new_quantity=Decimal(str(quantity)),
+            new_price=Decimal(str(price)) if price is not None else None,
+            user=user
+        )
+        return {"message": f"Order {order.order_number} updated", "total_amount": float(order.total_amount)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.post("/orders/{order_id}/invoice")
 def generate_gst_invoice(order_id: int, user: str = "admin", db: Session = Depends(get_db)):
     """

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, FileCheck } from 'lucide-react';
+import { Play, CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, FileCheck, RotateCcw } from 'lucide-react';
 import { api } from '../api';
 
 interface StepCheck {
@@ -82,6 +82,21 @@ export const BenchmarkRunner: React.FC = () => {
   const [steps, setSteps] = useState<StepCheck[]>(INITIAL_STEPS);
   const [running, setRunning] = useState<boolean>(false);
   const [completed, setCompleted] = useState<boolean>(false);
+
+  const handleReset = async () => {
+    if (!confirm('Reset all transactions and restore Section 5 opening balances?')) return;
+    setRunning(true);
+    try {
+      await api.resetBenchmark();
+      setSteps(INITIAL_STEPS);
+      setCompleted(false);
+      alert('Database restored to Section 5 opening stock!');
+    } catch (e: any) {
+      alert(`Reset failed: ${e.message}`);
+    } finally {
+      setRunning(false);
+    }
+  };
 
   const runAllBenchmarkSteps = async () => {
     setRunning(true);
@@ -216,14 +231,24 @@ export const BenchmarkRunner: React.FC = () => {
           <p className="text-xs text-slate-500">Executes the 9 mandatory benchmark steps end-to-end and verifies every official check</p>
         </div>
 
-        <button
-          onClick={runAllBenchmarkSteps}
-          disabled={running}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3 rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center gap-2 text-xs"
-        >
-          {running ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-          {running ? 'Executing Scenario...' : 'Run Full Benchmark Scenario'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleReset}
+            disabled={running}
+            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-3 rounded-xl border border-slate-200 transition flex items-center gap-2 text-xs"
+          >
+            <RotateCcw className="w-4 h-4 text-slate-500" />
+            Reset State
+          </button>
+          <button
+            onClick={runAllBenchmarkSteps}
+            disabled={running}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3 rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center gap-2 text-xs"
+          >
+            {running ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+            {running ? 'Executing Scenario...' : 'Run Full Benchmark Scenario'}
+          </button>
+        </div>
       </div>
 
       {completed && (

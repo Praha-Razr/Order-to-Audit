@@ -20,6 +20,7 @@ export const api = {
   getItems: () => fetchApi<any[]>('/items'),
   createItem: (data: any) => fetchApi<any>('/items', { method: 'POST', body: JSON.stringify(data) }),
   recordPurchase: (data: any) => fetchApi<any>('/items/purchase', { method: 'POST', body: JSON.stringify(data) }),
+  resetBenchmark: () => fetchApi<any>('/items/reset-benchmark', { method: 'POST' }),
   getStockSummary: () => fetchApi<any[]>('/items/stock-summary'),
   getLedger: (itemId?: number) => fetchApi<any[]>(`/items/ledger${itemId ? `?item_id=${itemId}` : ''}`),
   
@@ -31,6 +32,8 @@ export const api = {
   getOrders: () => fetchApi<any[]>('/sales/orders'),
   createOrder: (data: any) => fetchApi<any>('/sales/orders', { method: 'POST', body: JSON.stringify(data) }),
   approveOrder: (orderId: number) => fetchApi<any>(`/sales/orders/${orderId}/approve`, { method: 'POST' }),
+  rejectOrder: (orderId: number, reason: string) => fetchApi<any>(`/sales/orders/${orderId}/reject?reason=${encodeURIComponent(reason)}`, { method: 'POST' }),
+  editOrder: (orderId: number, itemId: number, qty: number, price?: number) => fetchApi<any>(`/sales/orders/${orderId}/edit?item_id=${itemId}&quantity=${qty}${price ? `&price=${price}` : ''}`, { method: 'PUT' }),
   generateInvoice: (orderId: number) => fetchApi<any>(`/sales/orders/${orderId}/invoice`, { method: 'POST' }),
   dispatchInvoice: (invoiceId: number) => fetchApi<any>(`/sales/invoices/${invoiceId}/dispatch`, { method: 'POST' }),
   cancelInvoice: (invoiceId: number, reason: string) => fetchApi<any>(`/sales/invoices/${invoiceId}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) }),
@@ -45,5 +48,6 @@ export const api = {
   getProductionReport: () => fetchApi<any[]>('/reports/production-report'),
   
   getInvoicePdfUrl: (invoiceId: number) => `${API_BASE}/reports/invoices/${invoiceId}/pdf`,
-  getLedgerExcelUrl: () => `${API_BASE}/reports/export/ledger/excel`
+  getLedgerExcelUrl: () => `${API_BASE}/reports/export/ledger/excel`,
+  getTallyXmlUrl: () => `${API_BASE}/reports/export/tally/xml`
 };

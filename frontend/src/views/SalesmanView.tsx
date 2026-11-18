@@ -13,6 +13,14 @@ export const SalesmanView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [successMsg, setSuccessMsg] = useState<string>('');
   const [isOffline, setIsOffline] = useState<boolean>(false);
+  const [offlineQueue, setOfflineQueue] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('nit_offline_orders');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const loadData = async () => {
     try {
@@ -45,20 +53,50 @@ export const SalesmanView: React.FC = () => {
   const isShortage = quantity > availableStock;
   const shortageQty = isShortage ? quantity - availableStock : 0;
 
+  const handleSyncOffline = async () => {
+    if (offlineQueue.length === 0) return;
+    setLoading(true);
+    let count = 0;
+    try {
+      for (const orderData of offlineQueue) {
+        await api.createOrder(orderData);
+        count++;
+      }
+      localStorage.removeItem('nit_offline_orders');
+      setOfflineQueue([]);
+      setSuccessMsg(`✅ Synced ${count} offline orders to factory database!`);
+      loadData();
+    } catch (err: any) {
+      alert(`Sync failed: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustomerId || !selectedItemId || quantity <= 0) return;
     setLoading(true);
     setSuccessMsg('');
 
-    try {
-      const res = await api.createOrder({
-        salesman_id: 1, // Salesman A or B
-        customer_id: selectedCustomerId,
-        items: [{ item_id: selectedItemId, quantity: quantity }],
-        user: 'salesman'
-      });
+    const orderPayload = {
+      salesman_id: 1, // Salesman A or B
+      customer_id: selectedCustomerId,
+      items: [{ item_id: selectedItemId, quantity: quantity }],
+      user: 'salesman'
+    };
 
+    if (isOffline) {
+      const newQueue = [...offlineQueue, { ...orderPayload, queuedAt: new Date().toISOString() }];
+      setOfflineQueue(newQueue);
+      localStorage.setItem('nit_offline_orders', JSON.stringify(newQueue));
+      setSuccessMsg(`📦 Weak Network: Order saved to local offline storage (${newQueue.length} queued). Will sync when network returns.`);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await api.createOrder(orderPayload);
       setSuccessMsg(
         res.shortage_flag
           ? `⚠️ Order ${res.order_number} submitted with SHORTAGE of ${res.shortage_qty} pkts flagged for factory.`
@@ -97,6 +135,24 @@ export const SalesmanView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Offline Queue Sync Banner */}
+      {offlineQueue.length > 0 && (
+        <div className="bg-amber-50 border border-amber-300 text-amber-900 p-3.5 rounded-2xl text-xs flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-2 font-semibold">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+            <span>{offlineQueue.length} order(s) stored offline in local queue</span>
+          </div>
+          <button
+            onClick={handleSyncOffline}
+            disabled={loading || isOffline}
+            className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 text-[11px]"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            Sync Now
+          </button>
+        </div>
+      )}
 
       {successMsg && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-xs font-medium flex items-center gap-2">

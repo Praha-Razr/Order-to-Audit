@@ -51,6 +51,18 @@ def export_ledger_excel(db: Session = Depends(get_db)):
         headers={"Content-Disposition": "attachment; filename=stock_ledger.xlsx"}
     )
 
+@router.get("/export/tally/xml")
+def export_tally_xml(db: Session = Depends(get_db)):
+    """
+    Exports all vouchers in Tally XML import format.
+    """
+    xml_str = ReportService.export_tally_xml(db)
+    return Response(
+        content=xml_str,
+        media_type="application/xml",
+        headers={"Content-Disposition": "attachment; filename=tally_import.xml"}
+    )
+
 @router.get("/invoices/{invoice_id}/pdf")
 def download_invoice_pdf(invoice_id: int, db: Session = Depends(get_db)):
     """
