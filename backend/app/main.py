@@ -1,5 +1,7 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import engine, Base, SessionLocal
@@ -39,20 +41,25 @@ def startup_populate():
     finally:
         db.close()
 
-@app.get("/")
-def root():
-    return {
-        "project": settings.PROJECT_NAME,
-        "version": settings.VERSION,
-        "docs_url": "/docs",
-        "factory": {
-            "name": "South Indian Snacks Manufacturer",
-            "state": settings.FACTORY_STATE,
-            "state_code": settings.FACTORY_STATE_CODE,
-            "gstin": settings.FACTORY_GSTIN
-        },
-        "status": "online"
-    }
+# Mount frontend production build if available
+frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
+if os.path.exists(frontend_dist):
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
+else:
+    @app.get("/")
+    def root():
+        return {
+            "project": settings.PROJECT_NAME,
+            "version": settings.VERSION,
+            "docs_url": "/docs",
+            "factory": {
+                "name": "South Indian Snacks Manufacturer",
+                "state": settings.FACTORY_STATE,
+                "state_code": settings.FACTORY_STATE_CODE,
+                "gstin": settings.FACTORY_GSTIN
+            },
+            "status": "online"
+        }
 
 @app.get("/health")
 def health():
