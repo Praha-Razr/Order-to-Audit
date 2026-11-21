@@ -1,6 +1,8 @@
 # Design Note: Order-to-Audit System for Small Food Manufacturer
 **Applicant Shortlisting Submission | Centre for Digital Infrastructure, NIT Tiruchirappalli**
 
+> 📺 **Demo Video Walkthrough (Section 5 Benchmark):** [https://youtu.be/-Rm7o3grKjA](https://youtu.be/-Rm7o3grKjA)
+
 ---
 
 ## 1. System Architecture & Dual-Loop Core

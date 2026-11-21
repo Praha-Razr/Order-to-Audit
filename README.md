@@ -3,6 +3,8 @@
 
 A complete, production-grade Order-to-Audit prototype connecting field sales orders directly to recipe-based production, immutable ledger-based inventory, costing, and auditor tax reports for a packaged South Indian snacks manufacturer.
 
+> 📺 **Demo Video Walkthrough (Section 5 Benchmark):** [https://youtu.be/-Rm7o3grKjA](https://youtu.be/-Rm7o3grKjA)
+
 ---
 
 ## 1. Quick Start & Run Commands
